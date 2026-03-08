@@ -1,6 +1,7 @@
 package com.josetin.userservice.service;
 
 import com.josetin.userservice.entity.Role;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -22,5 +23,23 @@ public class JwtService {
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
                 .signWith(Keys.hmacShaKeyFor(SECRET.getBytes()),SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String extractUsername(String token){
+        return getClaims(token).getSubject();
+    }
+
+    public String extractRole(String token){
+        return getClaims(token).get("role",String.class);
+    }
+
+
+    private Claims getClaims(String token){
+
+        return Jwts.parserBuilder()
+                .setSigningKey(SECRET.getBytes())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 }
