@@ -1,11 +1,17 @@
 package com.josetin.accountservice.service;
 
 import com.josetin.accountservice.dto.request.CreateAccountRequest;
+import com.josetin.accountservice.dto.request.DepositRequest;
+import com.josetin.accountservice.dto.request.WithdrawRequest;
 import com.josetin.accountservice.dto.response.AccountResponse;
 import com.josetin.accountservice.entity.Account;
+import com.josetin.accountservice.exception.AccountNotFoundException;
+import com.josetin.accountservice.exception.InsufficientBalanceException;
 import com.josetin.accountservice.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.With;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -24,6 +30,54 @@ public class AccountServiceImpl implements AccountService{
                 .ownerUsername(request.ownerUsername())
                 .balance(request.initialBalance())
                 .build();
+
+        accountRepository.save(account);
+
+        return new AccountResponse(
+                account.getAccountNumber(),
+                account.getOwnerUsername(),
+                account.getBalance()
+        );
+    }
+
+    @Override
+    public AccountResponse getAccount(String accountNumber){
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+        return new AccountResponse(
+                account.getAccountNumber(),
+                account.getOwnerUsername(),
+                account.getBalance()
+        );
+    }
+
+    @Override
+    @Transactional
+    public AccountResponse deposit(String accountNumber, DepositRequest request) {
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(()-> new AccountNotFoundException("Account not found"));
+
+        account.setBalance(account.getBalance().add(request.amount()));
+
+        accountRepository.save(account);
+
+        return new AccountResponse(
+                account.getAccountNumber(),
+                account.getOwnerUsername(),
+                account.getBalance()
+        );
+    }
+
+    public AccountResponse withdraw(String accountNumber, WithdrawRequest request){
+        Account account = accountRepository.findByAccountNumber(accountNumber)
+                .orElseThrow(()-> new AccountNotFoundException("Account not found"));
+
+        if(account.getBalance().compareTo(request.amount()) < 0){
+            throw new InsufficientBalanceException("Insufficient Balance");
+        }
+
+        account.setBalance(account.getBalance().subtract(request.amount()));
 
         accountRepository.save(account);
 
