@@ -10,7 +10,6 @@ import com.josetin.accountservice.exception.AccountNotFoundException;
 import com.josetin.accountservice.exception.InsufficientBalanceException;
 import com.josetin.accountservice.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
-import lombok.With;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -110,7 +109,7 @@ public class AccountServiceImpl implements AccountService{
                         new AccountNotFoundException("To account not found"));
 
         if (fromAccount.getBalance().compareTo(request.amount()) < 0){
-            throw new InsufficientBalanceException("Insufficent balance");
+            throw new InsufficientBalanceException("Insufficient balance");
         }
 
         fromAccount.setBalance(fromAccount.getBalance().subtract(request.amount()));
