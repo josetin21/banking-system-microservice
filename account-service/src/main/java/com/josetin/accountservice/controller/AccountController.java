@@ -2,6 +2,7 @@ package com.josetin.accountservice.controller;
 
 import com.josetin.accountservice.dto.request.CreateAccountRequest;
 import com.josetin.accountservice.dto.request.DepositRequest;
+import com.josetin.accountservice.dto.request.TransferRequest;
 import com.josetin.accountservice.dto.request.WithdrawRequest;
 import com.josetin.accountservice.dto.response.AccountResponse;
 import com.josetin.accountservice.service.AccountService;
@@ -38,5 +39,10 @@ public class AccountController {
             @RequestBody WithdrawRequest request
             ){
         return accountService.withdraw(accountNumber,request);
+    }
+
+    @PostMapping("/transfer")
+    public AccountResponse transfer(@RequestBody TransferRequest request){
+        return accountService.transfer(request);
     }
 }

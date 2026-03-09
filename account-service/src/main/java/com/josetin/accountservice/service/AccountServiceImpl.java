@@ -2,6 +2,7 @@ package com.josetin.accountservice.service;
 
 import com.josetin.accountservice.dto.request.CreateAccountRequest;
 import com.josetin.accountservice.dto.request.DepositRequest;
+import com.josetin.accountservice.dto.request.TransferRequest;
 import com.josetin.accountservice.dto.request.WithdrawRequest;
 import com.josetin.accountservice.dto.response.AccountResponse;
 import com.josetin.accountservice.entity.Account;
@@ -69,6 +70,8 @@ public class AccountServiceImpl implements AccountService{
         );
     }
 
+    @Override
+    @Transactional
     public AccountResponse withdraw(String accountNumber, WithdrawRequest request){
         Account account = accountRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(()-> new AccountNotFoundException("Account not found"));
@@ -85,6 +88,42 @@ public class AccountServiceImpl implements AccountService{
                 account.getAccountNumber(),
                 account.getOwnerUsername(),
                 account.getBalance()
+        );
+    }
+
+    @Override
+    @Transactional
+    public AccountResponse transfer(TransferRequest request){
+
+        if (request.fromAccountNumber().equals(request.toAccountNumber())){
+            throw new RuntimeException("Cannot transfer to same account");
+        }
+
+        Account fromAccount = accountRepository
+                .findByAccountNumberForUpdate(request.fromAccountNumber())
+                .orElseThrow(()->
+                        new AccountNotFoundException("From account not found"));
+
+        Account toAccount = accountRepository
+                .findByAccountNumberForUpdate(request.toAccountNumber())
+                .orElseThrow(()->
+                        new AccountNotFoundException("To account not found"));
+
+        if (fromAccount.getBalance().compareTo(request.amount()) < 0){
+            throw new InsufficientBalanceException("Insufficent balance");
+        }
+
+        fromAccount.setBalance(fromAccount.getBalance().subtract(request.amount()));
+
+        toAccount.setBalance(toAccount.getBalance().add(request.amount()));
+
+        accountRepository.save(fromAccount);
+        accountRepository.save(toAccount);
+
+        return new AccountResponse(
+                fromAccount.getAccountNumber(),
+                fromAccount.getOwnerUsername(),
+                fromAccount.getBalance()
         );
     }
 }
