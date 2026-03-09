@@ -1,11 +1,10 @@
 package com.josetin.accountservice.service;
 
-import com.josetin.accountservice.dto.request.CreateAccountRequest;
-import com.josetin.accountservice.dto.request.DepositRequest;
-import com.josetin.accountservice.dto.request.TransferRequest;
-import com.josetin.accountservice.dto.request.WithdrawRequest;
+import com.josetin.accountservice.client.TransactionClient;
+import com.josetin.accountservice.dto.request.*;
 import com.josetin.accountservice.dto.response.AccountResponse;
 import com.josetin.accountservice.entity.Account;
+import com.josetin.accountservice.entity.TransactionType;
 import com.josetin.accountservice.exception.AccountNotFoundException;
 import com.josetin.accountservice.exception.InsufficientBalanceException;
 import com.josetin.accountservice.repository.AccountRepository;
@@ -20,6 +19,7 @@ import java.util.UUID;
 public class AccountServiceImpl implements AccountService{
 
     private final AccountRepository accountRepository;
+    private final TransactionClient transactionClient;
 
     public AccountResponse createAccount(CreateAccountRequest request){
 
@@ -62,6 +62,14 @@ public class AccountServiceImpl implements AccountService{
 
         accountRepository.save(account);
 
+        transactionClient.recordTransaction(
+                new TransactionRequest(
+                        account.getAccountNumber(),
+                        TransactionType.DEPOSIT,
+                        request.amount()
+                )
+        );
+
         return new AccountResponse(
                 account.getAccountNumber(),
                 account.getOwnerUsername(),
@@ -82,6 +90,14 @@ public class AccountServiceImpl implements AccountService{
         account.setBalance(account.getBalance().subtract(request.amount()));
 
         accountRepository.save(account);
+
+        transactionClient.recordTransaction(
+                new TransactionRequest(
+                        account.getAccountNumber(),
+                        TransactionType.WITHDRAW,
+                        request.amount()
+                )
+        );
 
         return new AccountResponse(
                 account.getAccountNumber(),
@@ -118,6 +134,22 @@ public class AccountServiceImpl implements AccountService{
 
         accountRepository.save(fromAccount);
         accountRepository.save(toAccount);
+
+        transactionClient.recordTransaction(
+                new TransactionRequest(
+                        fromAccount.getAccountNumber(),
+                        TransactionType.TRANSFER_OUT,
+                        request.amount()
+                )
+        );
+
+        transactionClient.recordTransaction(
+                new TransactionRequest(
+                        toAccount.getAccountNumber(),
+                        TransactionType.TRANSFER_IN,
+                        request.amount()
+                )
+        );
 
         return new AccountResponse(
                 fromAccount.getAccountNumber(),
